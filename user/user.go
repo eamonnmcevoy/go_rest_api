@@ -2,12 +2,8 @@ package user
 
 import (
   "gopkg.in/mgo.v2/bson"
+  "golang.org/x/crypto/bcrypt"
 )
-
-type NewUserTransport struct {
-  Username string `json:"username"`
-  Password string `json:"password"`
-}
 
 type User struct {
   Id       bson.ObjectId `json:"_id,omitempty" bson:"_id,omitempty"`
@@ -16,10 +12,24 @@ type User struct {
   Salt         string    `json:"salt"`
 }
 
-func NewUser(username string, hash string, salt string) User {
+func NewUser(c Credentials) (User, error) {
   user := User{}
-  user.Username = username
+  user.Username = c.Username
+
+  hash, salt, err := c.salt()
+  if err != nil {
+    return user, err
+  }
+
   user.PasswordHash = hash
   user.Salt = salt
-  return user
+
+  return user, err
+}
+
+func(u* User) comparePassword(password string) bool { 
+  incoming := []byte(password+u.Salt)
+  existing := []byte(u.PasswordHash)
+  err := bcrypt.CompareHashAndPassword(existing, incoming)
+  return err == nil
 }

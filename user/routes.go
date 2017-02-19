@@ -1,21 +1,17 @@
 package user
 
 import (
-  "fmt"
   "net/http"
   "encoding/json"
   "github.com/gorilla/mux"
   "gopkg.in/mgo.v2"
-  "go_rest_api/util"
-  "golang.org/x/crypto/bcrypt")
+  "go_rest_api/util")
 
 type userService struct {
   provider *provider
 }
 
 func NewUserRouter(session *mgo.Session, router *mux.Router) *mux.Router {
-  fmt.Println("set up routes - user")
-
   s := userService{NewUserProvider(session)}
 
   router.HandleFunc("/create", s.createUserHandler)
@@ -25,23 +21,19 @@ func NewUserRouter(session *mgo.Session, router *mux.Router) *mux.Router {
 }
 
 func(u* userService) createUserHandler(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("createUserHandler")
-  
-  var newUser NewUserTransport
-  decoder := json.NewDecoder(r.Body)
-  err := decoder.Decode(&newUser)
+  err, credentials := decodeCredentials(r)
   if err != nil {
     util.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
     return
   }
 
-  hash, salt, saltErr := salt(newUser.Password)
-  if saltErr != nil {
-    util.RespondWithError(w, http.StatusInternalServerError, saltErr.Error())
+  var user User
+  user, err = NewUser(credentials)
+  if err != nil {
+    util.RespondWithError(w, http.StatusInternalServerError, err.Error())
     return
   }
 
-  user := NewUser(newUser.Username, hash, salt)
   err = u.provider.InsertUser(user)
   if err != nil {
     util.RespondWithError(w, http.StatusInternalServerError, err.Error())
@@ -52,15 +44,14 @@ func(u* userService) createUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func(u* userService) getUserHandler(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("getUserHandler")
-  
   err, findUser := decodeUser(r)
   if err != nil {
     util.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
     return
   }
 
-  err, user := u.provider.GetUser(findUser.Username)
+  var user User
+  err, user = u.provider.GetUser(findUser.Username)
   if err != nil {
     util.RespondWithError(w, http.StatusInternalServerError, err.Error())
     return
@@ -70,44 +61,37 @@ func(u* userService) getUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func(u *userService) authenticateHandler(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("authenticateHandler")
-  
-  var newUser NewUserTransport
-  decoder := json.NewDecoder(r.Body)
-  decodeErr := decoder.Decode(&newUser)
-  if decodeErr != nil {
+  err, credentials := decodeCredentials(r)
+  if err != nil {
     util.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
     return
   }
 
-  findErr, dbUser := u.provider.GetUser(newUser.Username)
-  if findErr != nil {
-    util.RespondWithError(w, http.StatusInternalServerError, "No user with that name")
+  var user User
+  err, user = u.provider.GetUser(credentials.Username)
+  if err != nil {
+    util.RespondWithError(w, http.StatusInternalServerError, "No such user")
     return
   }
 
-  if err := bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(newUser.Password+dbUser.Salt)); err != nil {
+  if user.comparePassword(credentials.Password) {
+    util.RespondWithJSON(w, http.StatusOK, map[string]string{"Success: ":credentials.Username})
+  } else {
     util.RespondWithError(w, http.StatusInternalServerError, "Incorrect password")
-    return
   }
-  util.RespondWithJSON(w, http.StatusOK, map[string]string{"Success: ":newUser.Username})
+  
 }
 
 func decodeUser(r *http.Request) (error,User) {
-  var user User
+  var u User
   decoder := json.NewDecoder(r.Body)
-  err := decoder.Decode(&user)
-  return err, user
+  err := decoder.Decode(&u)
+  return err, u
 }
 
-func salt(password string) (string, string, error) { 
-  uuid, uuidErr := util.NewUUID()
-  if uuidErr != nil {
-    return "", "", uuidErr
-  }
-
-  hash, err := bcrypt.GenerateFromPassword([]byte(password+uuid), bcrypt.DefaultCost)
-  
-  hashString := string(hash[:])
-  return hashString, uuid, err
-}
+func decodeCredentials(r *http.Request) (error,Credentials) {
+  var c Credentials
+  decoder := json.NewDecoder(r.Body)
+  err := decoder.Decode(&c)
+  return err, c
+}  
