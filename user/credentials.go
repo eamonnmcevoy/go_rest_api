@@ -1,7 +1,7 @@
 package user
 
 import (
-  "go_rest_api/util"
+  "go_rest_api/util/uuid"
   "golang.org/x/crypto/bcrypt"
 )
 
@@ -11,7 +11,7 @@ type Credentials struct {
 }
 
 func(c* Credentials) salt() (string, string, error) { 
-  uuid, uuidErr := util.NewUUID()
+  uuid, uuidErr := uuid.New()
   if uuidErr != nil {
     return "", "", uuidErr
   }

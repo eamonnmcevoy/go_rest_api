@@ -6,10 +6,10 @@ import (
 )
 
 type User struct {
-  Id       bson.ObjectId `json:"_id,omitempty" bson:"_id,omitempty"`
-  Username string        `json:"username"`
-  PasswordHash string    `json:"passwordHash"`
-  Salt         string    `json:"salt"`
+  Id           bson.ObjectId `json:"_id,omitempty" bson:"_id,omitempty"`
+  Username     string        `json:"username"`
+  PasswordHash string        `json:"-"`
+  Salt         string        `json:"-"`
 }
 
 func NewUser(c Credentials) (User, error) {
@@ -27,9 +27,9 @@ func NewUser(c Credentials) (User, error) {
   return user, err
 }
 
-func(u* User) comparePassword(password string) bool { 
+func(u* User) comparePassword(password string) error { 
   incoming := []byte(password+u.Salt)
   existing := []byte(u.PasswordHash)
   err := bcrypt.CompareHashAndPassword(existing, incoming)
-  return err == nil
+  return err
 }

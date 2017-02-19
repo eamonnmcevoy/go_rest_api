@@ -1,28 +1,14 @@
-package util
+package uuid
 
 import (
   "io"
   "fmt"
-  "net/http"
-  "encoding/json"
   "crypto/rand"
 )
 
-func RespondWithError(w http.ResponseWriter, code int, message string) {
-  RespondWithJSON(w, code, map[string]string{"error": message})
-}
-
-func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-  response, _ := json.Marshal(payload)
-
-  w.Header().Set("Content-Type", "application/json")
-  w.WriteHeader(code)
-  w.Write(response)
-}
-
 // https://play.golang.org/p/4FkNSiUDMg
 // newUUID generates a random UUID according to RFC 4122
-func NewUUID() (string, error) {
+func New() (string, error) {
   uuid := make([]byte, 16)
   n, err := io.ReadFull(rand.Reader, uuid)
   if n != len(uuid) || err != nil {

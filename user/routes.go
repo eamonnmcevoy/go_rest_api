@@ -5,79 +5,68 @@ import (
   "encoding/json"
   "github.com/gorilla/mux"
   "gopkg.in/mgo.v2"
-  "go_rest_api/util")
+  "go_rest_api/util/response"
+)
 
-type userService struct {
-  provider *provider
+type userRouter struct {
+  service IuserService
 }
 
 func NewUserRouter(session *mgo.Session, router *mux.Router) *mux.Router {
-  s := userService{NewUserProvider(session)}
+  u := userRouter{NewUserService(session)}
 
-  router.HandleFunc("/create", s.createUserHandler)
-  router.HandleFunc("/get", s.getUserHandler)
-  router.HandleFunc("/authenticate", s.authenticateHandler)
+  router.HandleFunc("/create", u.createUserHandler)
+  router.HandleFunc("/get", u.getUserHandler)
+  router.HandleFunc("/authenticate", u.authenticateHandler)
   return router
 }
 
-func(u* userService) createUserHandler(w http.ResponseWriter, r *http.Request) {
+func(u* userRouter) createUserHandler(w http.ResponseWriter, r *http.Request) {
   err, credentials := decodeCredentials(r)
   if err != nil {
-    util.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
+    response.Error(w, http.StatusBadRequest, "Invalid request payload")
     return
   }
 
-  var user User
-  user, err = NewUser(credentials)
+  err = u.service.createUser(credentials)
   if err != nil {
-    util.RespondWithError(w, http.StatusInternalServerError, err.Error())
+    response.Error(w, http.StatusInternalServerError, err.Error())
     return
   }
 
-  err = u.provider.InsertUser(user)
-  if err != nil {
-    util.RespondWithError(w, http.StatusInternalServerError, err.Error())
-    return
-  }
-
-  util.RespondWithJSON(w, http.StatusOK, err)
+  response.Json(w, http.StatusOK, err)
 }
 
-func(u* userService) getUserHandler(w http.ResponseWriter, r *http.Request) {
+func(u* userRouter) getUserHandler(w http.ResponseWriter, r *http.Request) {
   err, findUser := decodeUser(r)
   if err != nil {
-    util.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
+    response.Error(w, http.StatusBadRequest, "Invalid request payload")
     return
   }
 
   var user User
-  err, user = u.provider.GetUser(findUser.Username)
+  err, user = u.service.getUserByUsername(findUser.Username)
   if err != nil {
-    util.RespondWithError(w, http.StatusInternalServerError, err.Error())
+    response.Error(w, http.StatusInternalServerError, err.Error())
     return
   }
 
-  util.RespondWithJSON(w, http.StatusOK, user)
+  response.Json(w, http.StatusOK, user)
 }
 
-func(u *userService) authenticateHandler(w http.ResponseWriter, r *http.Request) {
+func(u *userRouter) authenticateHandler(w http.ResponseWriter, r *http.Request) {
   err, credentials := decodeCredentials(r)
   if err != nil {
-    util.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
+    response.Error(w, http.StatusBadRequest, "Invalid request payload")
     return
   }
 
   var user User
-  err, user = u.provider.GetUser(credentials.Username)
-  if err != nil {
-    util.RespondWithError(w, http.StatusInternalServerError, "No such user")
-    return
-  }
-
-  if user.comparePassword(credentials.Password) {
-    util.RespondWithJSON(w, http.StatusOK, map[string]string{"Success: ":credentials.Username})
+  err, user = u.service.authenticate(credentials)
+  if err == nil {
+    response.Json(w, http.StatusOK, user)
   } else {
-    util.RespondWithError(w, http.StatusInternalServerError, "Incorrect password")
+    response.Error(w, http.StatusInternalServerError, "Incorrect password")
   }
   
 }
