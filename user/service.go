@@ -7,7 +7,7 @@ import (
 type IuserService interface {
   createUser(c Credentials) error
   getUserByUsername(username string) (error, User)
-  authenticate(c Credentials) (error, User)
+  login(c Credentials) (error, User)
 }
 
 type userService struct {
@@ -32,7 +32,7 @@ func(u userService) getUserByUsername(username string) (error, User) {
   return err, user
 }
 
-func(u userService) authenticate(c Credentials) (error, User) {
+func(u userService) login(c Credentials) (error, User) {
   err, user := u.provider.GetUserByUsername(c.Username)
   if err == nil {
     err = user.comparePassword(c.Password) 
