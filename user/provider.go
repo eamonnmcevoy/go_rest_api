@@ -3,15 +3,17 @@ package user
 import (
   "gopkg.in/mgo.v2/bson"
   "gopkg.in/mgo.v2"
+  "go_rest_api/mongo"
 )
 
 type provider struct {
   Collection *mgo.Collection
 }
 
-func NewUserProvider(mongoSession *mgo.Session) *provider {
+func NewUserProvider() *provider {
   p := provider{}
-  p.Collection = mongoSession.DB("test").C("user")
+  session := mongo.Session()
+  p.Collection = session.DB("test").C("user")
   return &p
 }
 

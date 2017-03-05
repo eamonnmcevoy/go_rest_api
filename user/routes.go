@@ -4,7 +4,6 @@ import (
   "net/http"
   "encoding/json"
   "github.com/gorilla/mux"
-  "gopkg.in/mgo.v2"
   "go_rest_api/util/response"
 )
 
@@ -12,8 +11,8 @@ type userRouter struct {
   service IuserService
 }
 
-func NewUserRouter(session *mgo.Session, router *mux.Router) *mux.Router {
-  u := userRouter{NewUserService(session)}
+func NewUserRouter(router *mux.Router) *mux.Router {
+  u := userRouter{NewUserService()}
 
   router.HandleFunc("/", u.createUserHandler).Methods("PUT")
   router.HandleFunc("/", validate(u.profileHandler)).Methods("GET")
@@ -63,7 +62,6 @@ func(u* userRouter) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
   response.Json(w, http.StatusOK, user)
 }
-
 
 func(u *userRouter) loginHandler(w http.ResponseWriter, r *http.Request) {
   err, credentials := decodeCredentials(r)

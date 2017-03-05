@@ -1,9 +1,5 @@
 package user
 
-import (
-  "gopkg.in/mgo.v2"
-)
-
 type IuserService interface {
   createUser(c Credentials) error
   getUserByUsername(username string) (error, User)
@@ -14,8 +10,8 @@ type userService struct {
   provider *provider
 }
 
-func NewUserService(session *mgo.Session) *userService{
-  s := userService{NewUserProvider(session)}
+func NewUserService() *userService{
+  s := userService{NewUserProvider()}
   return &s
 }
 
