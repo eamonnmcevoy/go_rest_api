@@ -1,4 +1,4 @@
-package response
+package http
 
 import (
   "net/http"
@@ -25,4 +25,3 @@ func JsonWithCookie(w http.ResponseWriter, code int, payload interface{}, cookie
   w.WriteHeader(code)
   w.Write(response)
 }
-
