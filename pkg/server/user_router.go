@@ -1,7 +1,8 @@
-package http
+package server
 
 import (
   "log"
+  "errors"
   "net/http"
   "encoding/json"
   "github.com/gorilla/mux"
@@ -23,7 +24,6 @@ func NewUserRouter(u root.UserService, router *mux.Router) *mux.Router {
 }
 
 func(s* userRouter) createUserHandler(w http.ResponseWriter, r *http.Request) {
-  log.Println("createUserHandler")
   err, user := decodeUser(r)
   if err != nil {
     Error(w, http.StatusBadRequest, "Invalid request payload")
@@ -40,12 +40,16 @@ func(s* userRouter) createUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func(s* userRouter) profileHandler(w http.ResponseWriter, r *http.Request) {
-  _claims := r.Context().Value(contextKeyAuthtoken).(claims)
-  username := _claims.Username
+  claim, ok := r.Context().Value(contextKeyAuthtoken).(claims)
+  if !ok {
+    Error(w, http.StatusBadRequest, "no context")
+    return
+  }
+  username := claim.Username
 
   err, user := s.userService.GetUserByUsername(username)
   if err != nil {
-    Error(w, http.StatusInternalServerError, err.Error())
+    Error(w, http.StatusNotFound, err.Error())
     return
   }
 
@@ -54,11 +58,12 @@ func(s* userRouter) profileHandler(w http.ResponseWriter, r *http.Request) {
 
 func(s *userRouter) getUserHandler(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
+  log.Println(vars)
   username := vars["username"]
   
   err, user := s.userService.GetUserByUsername(username)
   if err != nil {
-    Error(w, http.StatusInternalServerError, err.Error())
+    Error(w, http.StatusNotFound, err.Error())
     return
   }
 
@@ -84,14 +89,20 @@ func(s* userRouter) loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func decodeUser(r *http.Request) (error,root.User) {
-  var c root.User
+  var u root.User
+  if r.Body == nil {
+    return errors.New("no request body"), u
+  }
   decoder := json.NewDecoder(r.Body)
-  err := decoder.Decode(&c)
-  return err, c
+  err := decoder.Decode(&u)
+  return err, u
 }
 
 func decodeCredentials(r *http.Request) (error,root.Credentials) {
   var c root.Credentials
+  if r.Body == nil {
+    return errors.New("no request body"), c
+  }
   decoder := json.NewDecoder(r.Body)
   err := decoder.Decode(&c)
   return err, c

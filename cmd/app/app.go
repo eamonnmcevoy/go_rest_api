@@ -3,20 +3,20 @@ package main
 import (
   "fmt"
   "go_rest_api/pkg/mongo"
-  "go_rest_api/pkg/http"
+  "go_rest_api/pkg/server"
 )
 
 type App struct {
-  server *http.Server
+  s *server.Server
 }
 
 func(a *App) Initialize() {
   u := mongo.NewUserService()
-  a.server = http.NewServer(u)
+  a.s = server.NewServer(u)
 }
 
 func(a *App) Run() {
   fmt.Println("Run")
   defer mongo.Close()
-  a.server.Start()
+  a.s.Start()
 }

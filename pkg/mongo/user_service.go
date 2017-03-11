@@ -49,6 +49,7 @@ func (p *UserService) GetUserByUsername(username string) (error, root.User) {
   model := userModel{}
   err := p.collection.Find(bson.M{"username": username}).One(&model)
   return err, root.User{
+    Id: model.Id.Hex(),
     Username: model.Username,
     Password: "-" }
 }
@@ -63,6 +64,7 @@ func (p *UserService) Login(c root.Credentials) (error, root.User) {
   }
 
   return err, root.User{
+    Id: model.Id.Hex(),
     Username: model.Username,
     Password: "-" }
 }
