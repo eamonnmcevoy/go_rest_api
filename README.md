@@ -6,6 +6,7 @@ Dependancies
   - go get -u github.com/gorilla/mux
   - go get -u github.com/gorilla/handlers
   - go get -u golang.org/x/crypto/bcrypt
+  - go get github.com/google/uuid
 
 References
   - https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1#.sdcvblyts
