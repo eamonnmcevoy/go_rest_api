@@ -8,10 +8,10 @@ import (
 )
 
 type userModel struct {
-  Id           bson.ObjectId `json:"_id,omitempty" bson:"_id,omitempty"`
-  Username     string        `json:"username"`
-  PasswordHash string        `json:"-"`
-  Salt         string        `json:"-"`
+  Id           bson.ObjectId `bson:"_id,omitempty"`
+  Username     string
+  PasswordHash string
+  Salt         string
 }
 
 func userModelIndex() mgo.Index {
