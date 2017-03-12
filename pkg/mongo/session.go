@@ -4,26 +4,26 @@ import (
   "gopkg.in/mgo.v2"
 )
 
-var (
+type Session struct {
   session *mgo.Session
-)
-
-func Session() *mgo.Session {
-  if(session == nil) {
-    createSession()
-  }
-  return session.Copy()
 }
 
-func Close() {
-  session.Close()
-}
-
-func createSession() {
+func(s *Session) Open() error {
   var err error
-  session, err = mgo.Dial("127.0.0.1:27017")
+  s.session, err = mgo.Dial("127.0.0.1:27017")
   if err != nil {
-    panic(err)
+    return err
   }
-  session.SetMode(mgo.Monotonic, true)
+  s.session.SetMode(mgo.Monotonic, true)
+  return nil
+}
+
+func(s *Session) Copy() *mgo.Session {
+  return s.session.Copy()
+}
+
+func(s *Session) Close() {
+  if(s.session != nil) {
+    s.session.Close()
+  }
 }

@@ -10,8 +10,8 @@ type UserService struct {
  collection *mgo.Collection
 }
 
-func NewUserService() *UserService {
-  collection := Session().DB("test").C("user")
+func NewUserService(session *mgo.Session) *UserService {
+  collection := session.DB("test").C("user")
   collection.EnsureIndex(userModelIndex())
   return &UserService {collection}
 }
