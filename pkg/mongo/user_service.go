@@ -17,8 +17,7 @@ func NewUserService(session *mgo.Session) *UserService {
 }
 
 func(p *UserService) CreateUser(u *root.User) error {
-  user := userModel{Username: u.Username}
-  err := user.addSaltedPassword(u.Password)
+  user, err := newUserModel(u)
   if err != nil {
     return err
   }
