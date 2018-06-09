@@ -1,6 +1,7 @@
 package mongo
 
 import (
+  "go_rest_api/pkg"
   "gopkg.in/mgo.v2"
 )
 
@@ -8,14 +9,14 @@ type Session struct {
   session *mgo.Session
 }
 
-func(s *Session) Open() error {
-  var err error
-  s.session, err = mgo.Dial("127.0.0.1:27017")
+func NewSession(config *root.MongoConfig) (*Session,error) {
+  //var err error
+  session, err := mgo.Dial(config.Ip)
   if err != nil {
-    return err
+    return nil,err
   }
-  s.session.SetMode(mgo.Monotonic, true)
-  return nil
+  session.SetMode(mgo.Monotonic, true)
+  return &Session{session}, err
 }
 
 func(s *Session) Copy() *mgo.Session {
@@ -26,4 +27,11 @@ func(s *Session) Close() {
   if(s.session != nil) {
     s.session.Close()
   }
+}
+
+func(s *Session) DropDatabase(db string) error {
+  if(s.session != nil) {
+    return s.session.DB(db).DropDatabase()
+  }
+  return nil
 }

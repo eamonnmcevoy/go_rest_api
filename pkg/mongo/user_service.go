@@ -10,8 +10,8 @@ type UserService struct {
  collection *mgo.Collection
 }
 
-func NewUserService(session *mgo.Session) *UserService {
-  collection := session.DB("test").C("user")
+func NewUserService(session *mgo.Session, config *root.MongoConfig) *UserService {
+  collection := session.DB(config.DbName).C("user")
   collection.EnsureIndex(userModelIndex())
   return &UserService {collection}
 }
@@ -21,7 +21,6 @@ func(p *UserService) CreateUser(u *root.User) error {
   if err != nil {
     return err
   }
-
   return p.collection.Insert(&user)
 }
 

@@ -9,6 +9,10 @@ import (
   "go_rest_api/pkg"
 )
 
+type authHelper struct {
+  secret string
+}
+
 type claims struct {
     Username string `json:"username"`
     jwt.StandardClaims
@@ -22,7 +26,7 @@ var (
     contextKeyAuthtoken = contextKey("auth-token")
 )
 
-func newAuthCookie(user root.User) http.Cookie {
+func(a *authHelper) newCookie(user root.User) http.Cookie {
   expireTime := time.Now().Add(time.Hour * 1)
   c := claims {
     user.Username,
@@ -31,7 +35,7 @@ func newAuthCookie(user root.User) http.Cookie {
       Issuer: "localhost!",
     }}
 
-  token, _ := jwt.NewWithClaims(jwt.SigningMethodHS256,c).SignedString([]byte("secret"))
+  token, _ := jwt.NewWithClaims(jwt.SigningMethodHS256,c).SignedString([]byte(a.secret))
 
   cookie := http.Cookie {
     Name: "Auth",
@@ -41,7 +45,7 @@ func newAuthCookie(user root.User) http.Cookie {
   return cookie
 }
 
-func validate(next http.HandlerFunc) http.HandlerFunc {
+func(a *authHelper) validate(next http.HandlerFunc) http.HandlerFunc {
   return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
     cookie, err := req.Cookie("Auth")
     if err != nil {
@@ -53,7 +57,7 @@ func validate(next http.HandlerFunc) http.HandlerFunc {
       if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
         return nil, fmt.Errorf("Unexpected siging method")    
       }    
-      return []byte("secret"), nil
+      return []byte(a.secret), nil
     })
 
     if err != nil {
